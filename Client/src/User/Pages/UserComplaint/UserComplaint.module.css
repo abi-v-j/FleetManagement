@@ -1,0 +1,87 @@
+.page {
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.card {
+  background: #1b1f2e;
+  padding: 25px;
+  border-radius: 12px;
+  border: 1px solid #2b2f45;
+}
+
+h2, h3 {
+  color: #ffffff;
+  margin-bottom: 15px;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #2b2f45;
+  background: #0f111a;
+  color: #ffffff;
+  margin-bottom: 15px;
+  outline: none;
+}
+
+.input:focus,
+.textarea:focus {
+  border-color: #4f46e5;
+}
+
+.textarea {
+  min-height: 100px;
+  resize: none;
+}
+
+.btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: #dc2626;
+}
+
+.complaintItem {
+  background: #111827;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  border: 1px solid #2b2f45;
+}
+
+.complaintHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  color: #ffffff;
+}
+
+.pending {
+  background: #facc15;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  color: #000;
+}
+
+.resolved {
+  background: #22c55e;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+.noData {
+  color: #9ca3af;
+} 

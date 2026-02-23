@@ -1,0 +1,147 @@
+.adminDashboard {
+  background: radial-gradient(circle at top, #0f172a, #020617);
+  min-height: 100vh;
+  padding: 24px;
+  color: #e5e7eb;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+
+/* Header */
+.adminHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(145deg, #020617, #0b1220);
+  padding: 16px 22px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+.adminHeader h2 {
+  margin: 0;
+  font-weight: 600;
+  color: #f9fafb;
+  letter-spacing: 0.4px;
+}
+
+.adminHeader input {
+  background: #020617;
+  border: 1px solid #1e293b;
+  color: #f9fafb;
+  padding: 8px 14px;
+  border-radius: 8px;
+  outline: none;
+  width: 200px;
+}
+
+.adminHeader input::placeholder {
+  color: #94a3b8;
+}
+
+/* Stats Grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+/* Stat Cards */
+.statCard {
+  background: linear-gradient(145deg, #020617, #0b1220);
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.06),
+    0 10px 20px rgba(0,0,0,0.45);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.statCard:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.1),
+    0 12px 26px rgba(0,0,0,0.6);
+}
+
+.statCard span {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.statCard h3 {
+  font-size: 30px;
+  margin: 6px 0 4px;
+  color: #f8fafc;
+}
+
+.statCard p {
+  font-size: 12px;
+  letter-spacing: 0.3px;
+}
+
+/* Colors */
+.positive { color: #34d399; }
+.warning { color: #fbbf24; }
+.neutral  { color: #60a5fa; }
+
+/* Table */
+.tableCard {
+  background: linear-gradient(145deg, #020617, #0b1220);
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.05),
+    0 12px 24px rgba(0,0,0,0.6);
+}
+
+.tableCard h3 {
+  margin-bottom: 14px;
+  font-weight: 600;
+  color: #f9fafb;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table th {
+  text-align: left;
+  font-size: 12px;
+  color: #94a3b8;
+  padding-bottom: 10px;
+  letter-spacing: 0.4px;
+}
+
+table td {
+  padding: 12px 0;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  font-size: 14px;
+  color: #e5e7eb;
+}
+
+/* Status Pills */
+.status {
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  display: inline-block;
+  font-weight: 500;
+}
+
+.completed {
+  background: rgba(52, 211, 153, 0.18);
+  color: #34d399;
+}
+
+.ongoing {
+  background: rgba(96, 165, 250, 0.18);
+  color: #60a5fa;
+}
+
+.pending {
+  background: rgba(251, 191, 36, 0.18);
+  color: #fbbf24;
+}
