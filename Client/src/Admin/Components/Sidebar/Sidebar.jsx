@@ -28,10 +28,7 @@ const Sidebar = () => {
           <BusinessCenterIcon /> <span>Dashboard</span>
         </Link>
 
-        <Link to="/admin/personnel" className={Styles.item}>
-          <PeopleIcon /> <span>Personnel</span>
-        </Link>
-
+     
         <Link to="/admin/adminregistration" className={Styles.item}>
           <NoteAltIcon /> <span>Admin Registration</span>
         </Link>
@@ -44,15 +41,8 @@ const Sidebar = () => {
           <NoteAltIcon /> <span>Staff Registration</span>
         </Link>
 
-        <Link to="/admin/trips" className={Styles.item}>
-          <AirportShuttleIcon /> <span>Trips</span>
-        </Link>
-
-        <Link to="/admin/tracking" className={Styles.item}>
-          <NavigationIcon /> <span>Tracking</span>
-        </Link>
-
-        <Link to="/admin/user" className={Styles.item}>
+     
+        <Link to="/admin/viewuser" className={Styles.item}>
           <HailIcon /> <span>User Management</span>
         </Link>
 
@@ -60,10 +50,7 @@ const Sidebar = () => {
           <BarChartIcon /> <span>Reports</span>
         </Link>
 
-        <Link to="/admin/settings" className={Styles.item}>
-          <SettingsIcon /> <span>Settings</span>
-        </Link>
-
+       
         <Link to="/admin/district" className={Styles.item}>
           <HomeIcon /> <span>District</span>
         </Link>
@@ -73,13 +60,7 @@ const Sidebar = () => {
         </Link>
 
         
-        <Link to="/admin/vehicle" className={Styles.item}>
-          <AirportShuttleIcon /> <span>Vehicles</span>
-        </Link> 
-
-        <Link to="/admin/vehicle" className={Styles.item}>
-          <AddPhotoAlternateIcon /> <span>Gallery</span>
-        </Link> 
+       
 
 
       </nav>

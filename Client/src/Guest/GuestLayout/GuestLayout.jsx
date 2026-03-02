@@ -3,7 +3,7 @@ import GuestRoutes from '../../Routes/GuestRoutes'
 
 const GuestLayout = () => {
   return (
-    <div>GuestLayout
+    <div>
         <GuestRoutes/>
     </div>
   )

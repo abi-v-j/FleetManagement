@@ -16,37 +16,37 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 mongoose
-    .connect("mongodb+srv://ruben:ruben@cluster0.xnoaqgt.mongodb.net/db_mainproject")
-    .then(() => console.log("✅ MongoDB connected successfully"))
-    .catch((err) => {
-        console.error("❌ MongoDB connection error:", err.message);
-        process.exit(1);
-    });
+  .connect("mongodb+srv://ruben:ruben@cluster0.xnoaqgt.mongodb.net/db_mainproject")
+  .then(() => console.log("✅ MongoDB connected successfully"))
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err.message);
+    process.exit(1);
+  });
 
 
 
 // -------------------- File Upload Setup --------------------
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const dir = "./public/uploads";
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        cb(null, dir);
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname));
-    },
+  destination: (req, file, cb) => {
+    const dir = "./public/uploads";
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
 });
 const upload = multer({ storage });
 
 
 /* -------------------- PLACE (no district) -------------------- */
 const placeSchema = new mongoose.Schema(
-    {
-        placeName: { type: String, required: true, trim: true, unique: true },
-    },
-    { collection: "places", timestamps: true }
+  {
+    placeName: { type: String, required: true, trim: true, unique: true },
+  },
+  { collection: "places", timestamps: true }
 );
- const Place = mongoose.model("Place", placeSchema);
+const Place = mongoose.model("Place", placeSchema);
 
 
 
@@ -109,20 +109,20 @@ app.delete("/place/:id", async (req, res) => {
 
 /* -------------------- ADMIN -------------------- */
 const adminSchema = new mongoose.Schema(
-    {
-        adminName: { type: String, required: true, trim: true },
-        adminEmail: {
-            type: String,
-            required: true,
-            trim: true,
-            lowercase: true,
-            unique: true,
-        },
-        adminPassword: { type: String, required: true }, // store hashed
+  {
+    adminName: { type: String, required: true, trim: true },
+    adminEmail: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      unique: true,
     },
-    { collection: "admins", timestamps: true }
+    adminPassword: { type: String, required: true }, // store hashed
+  },
+  { collection: "admins", timestamps: true }
 );
- const Admin = mongoose.model("Admin", adminSchema);
+const Admin = mongoose.model("Admin", adminSchema);
 
 
 
@@ -205,22 +205,22 @@ app.delete("/admin/:id", async (req, res) => {
 });
 /* -------------------- MANAGER -------------------- */
 const managerSchema = new mongoose.Schema(
-    {
-        managerName: { type: String, required: true, trim: true },
-        managerEmail: {
-            type: String,
-            required: true,
-            trim: true,
-            lowercase: true,
-            unique: true,
-        },
-        managerContact: { type: String, required: true, trim: true },
-        managerAddress: { type: String, trim: true, default: "" },
-        managerPassword: { type: String, required: true }, // store hashed
-        placeId: { type: mongoose.Schema.Types.ObjectId, ref: "Place", required: true },
-        managerPhoto: { type: String, default: "" },
+  {
+    managerName: { type: String, required: true, trim: true },
+    managerEmail: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      unique: true,
     },
-    { collection: "managers", timestamps: true }
+    managerContact: { type: String, required: true, trim: true },
+    managerAddress: { type: String, trim: true, default: "" },
+    managerPassword: { type: String, required: true }, // store hashed
+    placeId: { type: mongoose.Schema.Types.ObjectId, ref: "Place", required: true },
+    managerPhoto: { type: String, default: "" },
+  },
+  { collection: "managers", timestamps: true }
 );
 const Manager = mongoose.model("Manager", managerSchema);
 
@@ -534,27 +534,27 @@ app.put("/manager/booking/reject/:id", async (req, res) => {
 });
 /* -------------------- USER -------------------- */
 const userSchema = new mongoose.Schema(
-    {
-        userName: { type: String, required: true, trim: true },
-        userEmail: {
-            type: String,
-            required: true,
-            trim: true,
-            lowercase: true,
-            unique: true,
-        },
-        userContact: { type: String, required: true, trim: true },
-        userAddress: { type: String, required: true, trim: true },
-        userPassword: { type: String, required: true }, // store hashed
-        placeId: { type: mongoose.Schema.Types.ObjectId, ref: "Place", required: true },
+  {
+    userName: { type: String, required: true, trim: true },
+    userEmail: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      unique: true,
     },
-    { collection: "users", timestamps: true }
+    userContact: { type: String, required: true, trim: true },
+    userAddress: { type: String, required: true, trim: true },
+    userPassword: { type: String, required: true }, // store hashed
+    placeId: { type: mongoose.Schema.Types.ObjectId, ref: "Place", required: true },
+  },
+  { collection: "users", timestamps: true }
 );
- const User = mongoose.model("User", userSchema);
+const User = mongoose.model("User", userSchema);
 
 
 
- // ------------ USER (INSERT ONLY) ------------
+// ------------ USER (INSERT ONLY) ------------
 
 app.post("/user", async (req, res) => {
   try {
@@ -680,18 +680,53 @@ app.put("/user/changepassword/:id", async (req, res) => {
   }
 });
 
+
+
+// -------------------- USER LIST (ADMIN) --------------------
+app.get("/user", async (req, res) => {
+  try {
+    const data = await User.aggregate([
+      { $sort: { createdAt: -1 } },
+      {
+        $lookup: {
+          from: "places",
+          localField: "placeId",
+          foreignField: "_id",
+          as: "place",
+        },
+      },
+      { $unwind: { path: "$place", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          userId: "$_id",
+          userName: 1,
+          userEmail: 1,
+          userContact: 1,
+          userAddress: 1,
+          placeName: "$place.placeName",
+          _id: 0,
+        },
+      },
+    ]);
+
+    res.json({ data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /* -------------------- STAFF TYPE -------------------- */
 const staffTypeSchema = new mongoose.Schema(
-    {
-        stafftypeName: { type: String, required: true, trim: true, unique: true },
-    },
-    { collection: "stafftypes", timestamps: true }
+  {
+    stafftypeName: { type: String, required: true, trim: true, unique: true },
+  },
+  { collection: "stafftypes", timestamps: true }
 );
- const Stafftype = mongoose.model("Stafftype", staffTypeSchema);
+const Stafftype = mongoose.model("Stafftype", staffTypeSchema);
 
 
 
- // ------------ STAFFTYPE (MINIMAL CRUD) ------------
+// ------------ STAFFTYPE (MINIMAL CRUD) ------------
 
 // CREATE
 app.post("/stafftype", async (req, res) => {
@@ -753,34 +788,34 @@ app.delete("/stafftype/:id", async (req, res) => {
 });
 /* -------------------- STAFF -------------------- */
 const staffSchema = new mongoose.Schema(
-    {
-        staffName: { type: String, required: true, trim: true },
-        staffEmail: {
-            type: String,
-            required: true,
-            trim: true,
-            lowercase: true,
-            unique: true,
-        },
-        staffContact: { type: String, required: true, trim: true },
-        staffAddress: { type: String, required: true, trim: true },
-        staffPassword: { type: String, required: true }, // store hashed
-        staffPhoto: { type: String, default: "" },
-
-        placeId: { type: mongoose.Schema.Types.ObjectId, ref: "Place", required: true },
-        stafftypeId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Stafftype",
-            required: true,
-        },
+  {
+    staffName: { type: String, required: true, trim: true },
+    staffEmail: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      unique: true,
     },
-    { collection: "staffs", timestamps: true }
+    staffContact: { type: String, required: true, trim: true },
+    staffAddress: { type: String, required: true, trim: true },
+    staffPassword: { type: String, required: true }, // store hashed
+    staffPhoto: { type: String, default: "" },
+
+    placeId: { type: mongoose.Schema.Types.ObjectId, ref: "Place", required: true },
+    stafftypeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Stafftype",
+      required: true,
+    },
+  },
+  { collection: "staffs", timestamps: true }
 );
- const Staff = mongoose.model("Staff", staffSchema);
+const Staff = mongoose.model("Staff", staffSchema);
 
 
 
- // ------------ STAFF (MINIMAL CRUD) ------------
+// ------------ STAFF (MINIMAL CRUD) ------------
 
 // CREATE (with photo)
 app.post("/staff", upload.single("staffPhoto"), async (req, res) => {
@@ -994,21 +1029,21 @@ app.put("/staff/changepassword/:id", async (req, res) => {
 });
 /* -------------------- VEHICLE -------------------- */
 const vehicleSchema = new mongoose.Schema(
-    {
-        vehicleName: { type: String, required: true, trim: true },
-        vehiclePhoto: { type: String, required: true, trim: true },
-        vehicleDescription: { type: String, required: true, trim: true },
+  {
+    vehicleName: { type: String, required: true, trim: true },
+    vehiclePhoto: { type: String, required: true, trim: true },
+    vehicleDescription: { type: String, required: true, trim: true },
 
-        vehiclePrice: { type: Number, required: true },      // FIX: Number
-        vehicleSeatcount: { type: Number, required: true },  // FIX: Number
-    },
-    { collection: "vehicles", timestamps: true }
+    vehiclePrice: { type: Number, required: true },      // FIX: Number
+    vehicleSeatcount: { type: Number, required: true },  // FIX: Number
+  },
+  { collection: "vehicles", timestamps: true }
 );
- const Vehicle = mongoose.model("Vehicle", vehicleSchema);
+const Vehicle = mongoose.model("Vehicle", vehicleSchema);
 
 
 
- // ------------ VEHICLE (MINIMAL CRUD) ------------
+// ------------ VEHICLE (MINIMAL CRUD) ------------
 
 // CREATE (with photo)
 app.post("/vehicle", upload.single("vehiclePhoto"), async (req, res) => {
@@ -1129,16 +1164,16 @@ app.get("/vehicle/:id", async (req, res) => {
 
 /* -------------------- GALLERY -------------------- */
 const gallerySchema = new mongoose.Schema(
-    {
-        galleryFile: { type: String, required: true, trim: true }, // paper: gallery_file
-        vehicleId: { type: mongoose.Schema.Types.ObjectId, ref: "Vehicle", required: true },
-    },
-    { collection: "gallery", timestamps: true }
+  {
+    galleryFile: { type: String, required: true, trim: true }, // paper: gallery_file
+    vehicleId: { type: mongoose.Schema.Types.ObjectId, ref: "Vehicle", required: true },
+  },
+  { collection: "gallery", timestamps: true }
 );
- const Gallery = mongoose.model("Gallery", gallerySchema);
+const Gallery = mongoose.model("Gallery", gallerySchema);
 
 
- // ------------ GALLERY (MINIMAL CRUD) ------------
+// ------------ GALLERY (MINIMAL CRUD) ------------
 
 // CREATE (upload one image for a vehicle)
 app.post("/gallery", upload.single("galleryFile"), async (req, res) => {
@@ -1211,40 +1246,40 @@ app.delete("/gallery/:id", async (req, res) => {
 /* -------------------- BOOKING -------------------- */
 /* FIX: Dates as Date, amount as Number, from/to place as ObjectId refs */
 const bookingSchema = new mongoose.Schema(
-    {
-        bookingAmount: { type: Number, required: true },
-        bookingDate: { type: Date, default: Date.now }, // paper has booking_date
+  {
+    bookingAmount: { type: Number, required: true },
+    bookingDate: { type: Date, default: Date.now }, // paper has booking_date
 
-        bookingFromdate: { type: Date, required: true },
-        bookingTodate: { type: Date, required: true },
+    bookingFromdate: { type: Date, required: true },
+    bookingTodate: { type: Date, required: true },
 
-        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-        vehicleId: { type: mongoose.Schema.Types.ObjectId, ref: "Vehicle", required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    vehicleId: { type: mongoose.Schema.Types.ObjectId, ref: "Vehicle", required: true },
 
-        bookingStatus: {
-            type: Number,
-            enum: [0, 1, 2, 3, 4], // 0: Pending, 1: Accepted, 2: Rejected, 3: Cancelled, 4: Completed
-            default: 0,
-        },
-
-        bookingFromplaceId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Place",
-            required: true,
-        },
-        bookingToplaceId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Place",
-            required: true,
-        },
+    bookingStatus: {
+      type: Number,
+      enum: [0, 1, 2, 3, 4], // 0: Pending, 1: Accepted, 2: Rejected, 3: Cancelled, 4: Completed
+      default: 0,
     },
-    { collection: "bookings", timestamps: true }
+
+    bookingFromplaceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Place",
+      required: true,
+    },
+    bookingToplaceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Place",
+      required: true,
+    },
+  },
+  { collection: "bookings", timestamps: true }
 );
- const Booking = mongoose.model("Booking", bookingSchema);
+const Booking = mongoose.model("Booking", bookingSchema);
 
 
 
- // -------------------- BOOKING CHECK AVAILABILITY --------------------
+// -------------------- BOOKING CHECK AVAILABILITY --------------------
 app.post("/booking/check", async (req, res) => {
   try {
     const { vehicleId, bookingFromdate, bookingTodate } = req.body;
@@ -1276,9 +1311,6 @@ app.post("/booking/check", async (req, res) => {
 });
 
 
-
-
-// -------------------- BOOK VEHICLE --------------------
 app.post("/booking", async (req, res) => {
   try {
     const {
@@ -1290,49 +1322,93 @@ app.post("/booking", async (req, res) => {
       bookingToplaceId,
     } = req.body;
 
-    if (!userId || !vehicleId || !bookingFromdate || !bookingTodate || !bookingFromplaceId || !bookingToplaceId)
+    // -------- required fields --------
+    if (
+      !userId ||
+      !vehicleId ||
+      !bookingFromdate ||
+      !bookingTodate ||
+      !bookingFromplaceId ||
+      !bookingToplaceId
+    )
       return res.status(400).json({ message: "All fields required" });
 
-    const from = new Date(bookingFromdate);
-    const to = new Date(bookingTodate);
+    // -------- id validation --------
+    if (
+      !isValidObjectId(userId) ||
+      !isValidObjectId(vehicleId) ||
+      !isValidObjectId(bookingFromplaceId) ||
+      !isValidObjectId(bookingToplaceId)
+    )
+      return res.status(400).json({ message: "Invalid ObjectId in request" });
+
+    // -------- place must be different --------
+    if (String(bookingFromplaceId) === String(bookingToplaceId))
+      return res.status(400).json({ message: "From place and To place cannot be same" });
+
+    // -------- date validation --------
+    const from = normalizeDateOnly(bookingFromdate);
+    const to = normalizeDateOnly(bookingTodate);
 
     if (isNaN(from.getTime()) || isNaN(to.getTime()))
       return res.status(400).json({ message: "Invalid dates" });
 
-    if (from > to) return res.status(400).json({ message: "From date must be <= To date" });
+    if (from > to)
+      return res.status(400).json({ message: "From date must be <= To date" });
 
-    // Check overlap again (important)
+    const today = normalizeDateOnly(new Date());
+    if (from < today)
+      return res.status(400).json({ message: "From date cannot be in the past" });
+
+    // -------- ensure documents exist --------
+    const [user, vehicle, fromPlace, toPlace] = await Promise.all([
+      User.findById(userId),
+      Vehicle.findById(vehicleId),
+      Place.findById(bookingFromplaceId),
+      Place.findById(bookingToplaceId),
+    ]);
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!vehicle) return res.status(404).json({ message: "Vehicle not found" });
+    if (!fromPlace) return res.status(404).json({ message: "From place not found" });
+    if (!toPlace) return res.status(404).json({ message: "To place not found" });
+
+    // -------- overlap check again (final authority) --------
     const overlap = await Booking.findOne({
-      vehicleId,
-      bookingStatus: { $in: [0, 1] },
+      vehicleId: new mongoose.Types.ObjectId(vehicleId),
+      bookingStatus: { $in: [0, 1] }, // active bookings
       bookingFromdate: { $lte: to },
       bookingTodate: { $gte: from },
     });
 
-    if (overlap) return res.status(409).json({ message: "Vehicle not available for selected dates" });
+    if (overlap)
+      return res.status(409).json({ message: "Vehicle not available for selected dates" });
 
-    const vehicle = await Vehicle.findById(vehicleId);
-    if (!vehicle) return res.status(404).json({ message: "Vehicle not found" });
-
-    // Calculate days (minimum 1)
+    // -------- calculate days + amount --------
     const msDay = 24 * 60 * 60 * 1000;
     const days = Math.max(1, Math.ceil((to - from) / msDay) + 1); // inclusive
     const bookingAmount = Number(vehicle.vehiclePrice) * days;
 
-    await Booking.create({
+    // -------- create booking --------
+    const created = await Booking.create({
       bookingAmount,
       bookingFromdate: from,
       bookingTodate: to,
       userId,
       vehicleId,
-      bookingStatus: 0,
+      bookingStatus: 0, // Pending
       bookingFromplaceId,
       bookingToplaceId,
     });
 
-    res.json({ message: "Booking successful", bookingAmount, days });
+    return res.json({
+      message: "Booking successful",
+      bookingAmount,
+      days,
+      bookingId: created._id,
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 });
 
@@ -1423,49 +1499,99 @@ app.put("/booking/cancel/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+
+
+app.post("/booking/check", async (req, res) => {
+  try {
+    const { vehicleId, bookingFromdate, bookingTodate } = req.body;
+
+    if (!vehicleId || !bookingFromdate || !bookingTodate)
+      return res
+        .status(400)
+        .json({ message: "vehicleId, bookingFromdate, bookingTodate required" });
+
+    if (!isValidObjectId(vehicleId))
+      return res.status(400).json({ message: "Invalid vehicleId" });
+
+    const from = normalizeDateOnly(bookingFromdate);
+    const to = normalizeDateOnly(bookingTodate);
+
+    if (isNaN(from.getTime()) || isNaN(to.getTime()))
+      return res.status(400).json({ message: "Invalid dates" });
+
+    if (from > to)
+      return res.status(400).json({ message: "From date must be <= To date" });
+
+    // Past date block (optional but recommended)
+    const today = normalizeDateOnly(new Date());
+    if (from < today)
+      return res.status(400).json({ message: "From date cannot be in the past" });
+
+    // Ensure vehicle exists
+    const v = await Vehicle.findById(vehicleId);
+    if (!v) return res.status(404).json({ message: "Vehicle not found" });
+
+    // Overlap check (Pending/Accepted block)
+    const overlap = await Booking.findOne({
+      vehicleId: new mongoose.Types.ObjectId(vehicleId),
+      bookingStatus: { $in: [0, 1] },
+      bookingFromdate: { $lte: to },
+      bookingTodate: { $gte: from },
+    });
+
+    return res.json({ available: !overlap });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+
+
+
 /* -------------------- ASSIGN -------------------- */
 const assignSchema = new mongoose.Schema(
-    {
-        assignDate: { type: Date, default: Date.now },
-        bookingId: { type: mongoose.Schema.Types.ObjectId, ref: "Booking", required: true },
-        staffId: { type: mongoose.Schema.Types.ObjectId, ref: "Staff", required: true },
+  {
+    assignDate: { type: Date, default: Date.now },
+    bookingId: { type: mongoose.Schema.Types.ObjectId, ref: "Booking", required: true },
+    staffId: { type: mongoose.Schema.Types.ObjectId, ref: "Staff", required: true },
 
-        assignStatus: {
-            type: Number,
-            enum: [0, 1, 2], // 0: Pending, 1: Accepted, 2: Rejected
-            default: 0,
-        },
+    assignStatus: {
+      type: Number,
+      enum: [0, 1, 2], // 0: Pending, 1: Accepted, 2: Rejected
+      default: 0,
     },
-    { collection: "assignments", timestamps: true }
+  },
+  { collection: "assignments", timestamps: true }
 );
- const Assign = mongoose.model("Assign", assignSchema);
+const Assign = mongoose.model("Assign", assignSchema);
 
 /* -------------------- FEEDBACK -------------------- */
 const feedbackSchema = new mongoose.Schema(
-    {
-        feedbackContent: { type: String, required: true, trim: true },
-        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    },
-    { collection: "feedbacks", timestamps: true }
+  {
+    feedbackContent: { type: String, required: true, trim: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  },
+  { collection: "feedbacks", timestamps: true }
 );
- const Feedback = mongoose.model("Feedback", feedbackSchema);
+const Feedback = mongoose.model("Feedback", feedbackSchema);
 
 /* -------------------- COMPLAINT -------------------- */
 
 const complaintSchema = new mongoose.Schema(
-    {
-        complaintTitle: { type: String, required: true, trim: true },
-        complaintContent: { type: String, required: true, trim: true },
-        complaintDate: { type: Date, default: Date.now },
+  {
+    complaintTitle: { type: String, required: true, trim: true },
+    complaintContent: { type: String, required: true, trim: true },
+    complaintDate: { type: Date, default: Date.now },
 
-        complaintReply: { type: String, default: "Pending" },
-        complaintStatus: { type: String, default: "Pending" },
+    complaintReply: { type: String, default: "Pending" },
+    complaintStatus: { type: String, default: "Pending" },
 
-        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    },
-    { collection: "complaints", timestamps: true }
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  },
+  { collection: "complaints", timestamps: true }
 );
- const Complaint = mongoose.model("Complaint", complaintSchema);
+const Complaint = mongoose.model("Complaint", complaintSchema);
 
 
 
@@ -1540,5 +1666,5 @@ app.post("/login", async (req, res) => {
 
 // -------------------- Start Server --------------------
 app.listen(PORT, () => {
-    console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
 });

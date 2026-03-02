@@ -9,6 +9,7 @@ import StaffRegistration from '../Admin/Pages/Staff/StaffRegistration'
 import Vehicle from '../Admin/Pages/Vehicle/Vehicle'
 import Gallery from '../Admin/Pages/Gallery/Gallery'
 import Stafftype from '../Admin/Pages/StaffType/StaffType'
+import ViewUser from '../Admin/Pages/ViewUser/ViewUser'
 const AdminRoutes = () => {
     return (
         <div>
@@ -22,6 +23,7 @@ const AdminRoutes = () => {
                 <Route path='managerregistration' element={<ManagerRegistration />}></Route>
                 <Route path='stafftype' element={<Stafftype />}></Route>
                 <Route path='vehicle' element={<Vehicle />}></Route>
+                <Route path='viewuser' element={<ViewUser />}></Route>
                 <Route path='gallery/:vehicleId' element={<Gallery />}></Route>
 
             </Routes>
