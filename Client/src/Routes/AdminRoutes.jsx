@@ -10,6 +10,7 @@ import Vehicle from '../Admin/Pages/Vehicle/Vehicle'
 import Gallery from '../Admin/Pages/Gallery/Gallery'
 import Stafftype from '../Admin/Pages/StaffType/StaffType'
 import ViewUser from '../Admin/Pages/ViewUser/ViewUser'
+import ViewComplaint from '../Admin/Pages/ViewComplaint/ViewComplaint'
 const AdminRoutes = () => {
     return (
         <div>
@@ -25,6 +26,7 @@ const AdminRoutes = () => {
                 <Route path='vehicle' element={<Vehicle />}></Route>
                 <Route path='viewuser' element={<ViewUser />}></Route>
                 <Route path='gallery/:vehicleId' element={<Gallery />}></Route>
+                <Route path="viewComplaint" element={<ViewComplaint />} />
 
             </Routes>
         </div>

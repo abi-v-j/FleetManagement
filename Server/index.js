@@ -407,18 +407,12 @@ app.put("/manager/changepassword/:id", async (req, res) => {
 });
 
 
-
-// -------------------- MANAGER: VIEW BOOKINGS BY PLACE --------------------
-app.get("/manager/bookings/:placeId", async (req, res) => {
+app.get("/manager/bookings/:managerId", async (req, res) => {
   try {
-    const placeId = new mongoose.Types.ObjectId(req.params.placeId);
+   
 
     const data = await Booking.aggregate([
-      {
-        $match: {
-          $or: [{ bookingFromplaceId: placeId }, { bookingToplaceId: placeId }],
-        },
-      },
+     
       { $sort: { createdAt: -1 } },
 
       {
@@ -485,13 +479,12 @@ app.get("/manager/bookings/:placeId", async (req, res) => {
       },
     ]);
 
-    res.json({ data });
+    return res.json({ data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.log("MANAGER BOOKINGS ERROR:", err);
+    return res.status(500).json({ error: err.message });
   }
 });
-
-
 
 
 
@@ -1310,7 +1303,6 @@ app.post("/booking/check", async (req, res) => {
   }
 });
 
-
 app.post("/booking", async (req, res) => {
   try {
     const {
@@ -1322,7 +1314,6 @@ app.post("/booking", async (req, res) => {
       bookingToplaceId,
     } = req.body;
 
-    // -------- required fields --------
     if (
       !userId ||
       !vehicleId ||
@@ -1330,37 +1321,44 @@ app.post("/booking", async (req, res) => {
       !bookingTodate ||
       !bookingFromplaceId ||
       !bookingToplaceId
-    )
+    ) {
       return res.status(400).json({ message: "All fields required" });
+    }
 
-    // -------- id validation --------
     if (
-      !isValidObjectId(userId) ||
-      !isValidObjectId(vehicleId) ||
-      !isValidObjectId(bookingFromplaceId) ||
-      !isValidObjectId(bookingToplaceId)
-    )
+      !mongoose.Types.ObjectId.isValid(userId) ||
+      !mongoose.Types.ObjectId.isValid(vehicleId) ||
+      !mongoose.Types.ObjectId.isValid(bookingFromplaceId) ||
+      !mongoose.Types.ObjectId.isValid(bookingToplaceId)
+    ) {
       return res.status(400).json({ message: "Invalid ObjectId in request" });
+    }
 
-    // -------- place must be different --------
-    if (String(bookingFromplaceId) === String(bookingToplaceId))
+    if (bookingFromplaceId === bookingToplaceId) {
       return res.status(400).json({ message: "From place and To place cannot be same" });
+    }
 
-    // -------- date validation --------
-    const from = normalizeDateOnly(bookingFromdate);
-    const to = normalizeDateOnly(bookingTodate);
+    const from = new Date(bookingFromdate);
+    const to = new Date(bookingTodate);
 
-    if (isNaN(from.getTime()) || isNaN(to.getTime()))
+    if (isNaN(from.getTime()) || isNaN(to.getTime())) {
       return res.status(400).json({ message: "Invalid dates" });
+    }
 
-    if (from > to)
-      return res.status(400).json({ message: "From date must be <= To date" });
+    from.setHours(0, 0, 0, 0);
+    to.setHours(0, 0, 0, 0);
 
-    const today = normalizeDateOnly(new Date());
-    if (from < today)
+    if (from > to) {
+      return res.status(400).json({ message: "From date must be less than or equal to To date" });
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (from < today) {
       return res.status(400).json({ message: "From date cannot be in the past" });
+    }
 
-    // -------- ensure documents exist --------
     const [user, vehicle, fromPlace, toPlace] = await Promise.all([
       User.findById(userId),
       Vehicle.findById(vehicleId),
@@ -1373,32 +1371,30 @@ app.post("/booking", async (req, res) => {
     if (!fromPlace) return res.status(404).json({ message: "From place not found" });
     if (!toPlace) return res.status(404).json({ message: "To place not found" });
 
-    // -------- overlap check again (final authority) --------
     const overlap = await Booking.findOne({
       vehicleId: new mongoose.Types.ObjectId(vehicleId),
-      bookingStatus: { $in: [0, 1] }, // active bookings
+      bookingStatus: { $in: [0, 1] },
       bookingFromdate: { $lte: to },
       bookingTodate: { $gte: from },
     });
 
-    if (overlap)
+    if (overlap) {
       return res.status(409).json({ message: "Vehicle not available for selected dates" });
+    }
 
-    // -------- calculate days + amount --------
-    const msDay = 24 * 60 * 60 * 1000;
-    const days = Math.max(1, Math.ceil((to - from) / msDay) + 1); // inclusive
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const days = Math.floor((to - from) / msPerDay) + 1;
     const bookingAmount = Number(vehicle.vehiclePrice) * days;
 
-    // -------- create booking --------
     const created = await Booking.create({
       bookingAmount,
       bookingFromdate: from,
       bookingTodate: to,
-      userId,
-      vehicleId,
-      bookingStatus: 0, // Pending
-      bookingFromplaceId,
-      bookingToplaceId,
+      userId: new mongoose.Types.ObjectId(userId),
+      vehicleId: new mongoose.Types.ObjectId(vehicleId),
+      bookingStatus: 0,
+      bookingFromplaceId: new mongoose.Types.ObjectId(bookingFromplaceId),
+      bookingToplaceId: new mongoose.Types.ObjectId(bookingToplaceId),
     });
 
     return res.json({
@@ -1408,10 +1404,10 @@ app.post("/booking", async (req, res) => {
       bookingId: created._id,
     });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    console.log("BOOKING ERROR:", err);
+    return res.status(500).json({ message: "Internal server error", error: err.message });
   }
 });
-
 
 
 // -------------------- USER MY BOOKINGS --------------------
@@ -1566,6 +1562,359 @@ const assignSchema = new mongoose.Schema(
 );
 const Assign = mongoose.model("Assign", assignSchema);
 
+app.get("/manager/staff/:managerId", async (req, res) => {
+  try {
+    if (!isValidObjectId(req.params.managerId)) {
+      return res.status(400).json({ message: "Invalid manager id" });
+    }
+
+    const manager = await Manager.findById(req.params.managerId);
+    if (!manager) {
+      return res.status(404).json({ message: "Manager not found" });
+    }
+
+    const data = await Staff.aggregate([
+      {
+        $match: {
+          placeId: new mongoose.Types.ObjectId(manager.placeId),
+        },
+      },
+      { $sort: { staffName: 1 } },
+
+      {
+        $lookup: {
+          from: "stafftypes",
+          localField: "stafftypeId",
+          foreignField: "_id",
+          as: "stafftype",
+        },
+      },
+      { $unwind: { path: "$stafftype", preserveNullAndEmptyArrays: true } },
+
+      {
+        $project: {
+          staffId: "$_id",
+          staffName: 1,
+          staffEmail: 1,
+          staffContact: 1,
+          staffAddress: 1,
+          staffPhoto: 1,
+          placeId: 1,
+          stafftypeId: 1,
+          stafftypeName: "$stafftype.stafftypeName",
+          _id: 0,
+        },
+      },
+    ]);
+
+    res.json({ data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
+app.get("/manager/booking/:bookingId", async (req, res) => {
+  try {
+    console.log("bookingId:", req.params.bookingId);
+
+    if (!mongoose.Types.ObjectId.isValid(req.params.bookingId)) {
+      return res.status(400).json({ message: "Invalid booking id" });
+    }
+
+    const data = await Booking.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(req.params.bookingId),
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+
+      {
+        $lookup: {
+          from: "vehicles",
+          localField: "vehicleId",
+          foreignField: "_id",
+          as: "vehicle",
+        },
+      },
+      { $unwind: { path: "$vehicle", preserveNullAndEmptyArrays: true } },
+
+      {
+        $lookup: {
+          from: "places",
+          localField: "bookingFromplaceId",
+          foreignField: "_id",
+          as: "fromPlace",
+        },
+      },
+      { $unwind: { path: "$fromPlace", preserveNullAndEmptyArrays: true } },
+
+      {
+        $lookup: {
+          from: "places",
+          localField: "bookingToplaceId",
+          foreignField: "_id",
+          as: "toPlace",
+        },
+      },
+      { $unwind: { path: "$toPlace", preserveNullAndEmptyArrays: true } },
+
+      {
+        $project: {
+          bookingId: "$_id",
+          bookingAmount: 1,
+          bookingDate: 1,
+          bookingFromdate: 1,
+          bookingTodate: 1,
+          bookingStatus: 1,
+
+          userId: 1,
+          userName: "$user.userName",
+          userEmail: "$user.userEmail",
+          userContact: "$user.userContact",
+
+          vehicleId: 1,
+          vehicleName: "$vehicle.vehicleName",
+          vehiclePhoto: "$vehicle.vehiclePhoto",
+
+          bookingFromplaceId: 1,
+          bookingToplaceId: 1,
+          fromPlaceName: "$fromPlace.placeName",
+          toPlaceName: "$toPlace.placeName",
+
+          _id: 0,
+        },
+      },
+    ]);
+
+    if (!data.length) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    return res.json(data[0]);
+  } catch (err) {
+    console.log("MANAGER BOOKING DETAILS ERROR:", err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+
+app.get("/manager/staff/:managerId", async (req, res) => {
+  try {
+    console.log("managerId:", req.params.managerId);
+
+    if (!mongoose.Types.ObjectId.isValid(req.params.managerId)) {
+      return res.status(400).json({ message: "Invalid manager id" });
+    }
+
+    const manager = await Manager.findById(req.params.managerId);
+    if (!manager) {
+      return res.status(404).json({ message: "Manager not found" });
+    }
+
+    const data = await Staff.aggregate([
+      {
+        $match: {
+          placeId: manager.placeId,
+        },
+      },
+      { $sort: { staffName: 1 } },
+
+      {
+        $lookup: {
+          from: "stafftypes",
+          localField: "stafftypeId",
+          foreignField: "_id",
+          as: "stafftype",
+        },
+      },
+      { $unwind: { path: "$stafftype", preserveNullAndEmptyArrays: true } },
+
+      {
+        $project: {
+          staffId: "$_id",
+          staffName: 1,
+          staffEmail: 1,
+          staffContact: 1,
+          staffAddress: 1,
+          staffPhoto: 1,
+          placeId: 1,
+          stafftypeId: 1,
+          stafftypeName: "$stafftype.stafftypeName",
+          _id: 0,
+        },
+      },
+    ]);
+
+    return res.json({ data });
+  } catch (err) {
+    console.log("MANAGER STAFF ERROR:", err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// -------------------- MANAGER: ASSIGN STAFF TO BOOKING --------------------
+app.post("/manager/assign", async (req, res) => {
+  try {
+    const { bookingId, staffId } = req.body;
+
+    if (!bookingId || !staffId) {
+      return res.status(400).json({ message: "bookingId and staffId required" });
+    }
+
+    if (!isValidObjectId(bookingId) || !isValidObjectId(staffId)) {
+      return res.status(400).json({ message: "Invalid bookingId or staffId" });
+    }
+
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    const staff = await Staff.findById(staffId);
+    if (!staff) {
+      return res.status(404).json({ message: "Staff not found" });
+    }
+
+    // booking must be accepted before assign
+    if (booking.bookingStatus !== 1) {
+      return res.status(400).json({ message: "Only accepted booking can be assigned" });
+    }
+
+    // staff place must match booking manager place side
+    const placeMatch =
+      String(staff.placeId) === String(booking.bookingFromplaceId) ||
+      String(staff.placeId) === String(booking.bookingToplaceId);
+
+    if (!placeMatch) {
+      return res.status(400).json({ message: "Staff place does not match booking place" });
+    }
+
+    // prevent duplicate assignment for same booking
+    const alreadyAssigned = await Assign.findOne({ bookingId });
+    if (alreadyAssigned) {
+      return res.status(409).json({ message: "Staff already assigned to this booking" });
+    }
+
+    const created = await Assign.create({
+      bookingId,
+      staffId,
+      assignStatus: 0,
+    });
+
+    res.json({
+      message: "Staff Assigned Successfully",
+      assignId: created._id,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
+// -------------------- MANAGER: VIEW ASSIGNMENTS --------------------
+app.get("/manager/assignments/:placeId", async (req, res) => {
+  try {
+    if (!isValidObjectId(req.params.placeId)) {
+      return res.status(400).json({ message: "Invalid place id" });
+    }
+
+    const placeId = new mongoose.Types.ObjectId(req.params.placeId);
+
+    const data = await Assign.aggregate([
+      {
+        $lookup: {
+          from: "bookings",
+          localField: "bookingId",
+          foreignField: "_id",
+          as: "booking",
+        },
+      },
+      { $unwind: { path: "$booking", preserveNullAndEmptyArrays: false } },
+
+      {
+        $match: {
+          $or: [
+            { "booking.bookingFromplaceId": placeId },
+            { "booking.bookingToplaceId": placeId },
+          ],
+        },
+      },
+
+      {
+        $lookup: {
+          from: "staffs",
+          localField: "staffId",
+          foreignField: "_id",
+          as: "staff",
+        },
+      },
+      { $unwind: { path: "$staff", preserveNullAndEmptyArrays: true } },
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "booking.userId",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+
+      {
+        $lookup: {
+          from: "vehicles",
+          localField: "booking.vehicleId",
+          foreignField: "_id",
+          as: "vehicle",
+        },
+      },
+      { $unwind: { path: "$vehicle", preserveNullAndEmptyArrays: true } },
+
+      { $sort: { createdAt: -1 } },
+
+      {
+        $project: {
+          assignId: "$_id",
+          assignDate: 1,
+          assignStatus: 1,
+
+          bookingId: "$booking._id",
+          bookingAmount: "$booking.bookingAmount",
+          bookingFromdate: "$booking.bookingFromdate",
+          bookingTodate: "$booking.bookingTodate",
+          bookingStatus: "$booking.bookingStatus",
+
+          userName: "$user.userName",
+          vehicleName: "$vehicle.vehicleName",
+
+          staffId: "$staff._id",
+          staffName: "$staff.staffName",
+          staffEmail: "$staff.staffEmail",
+          staffContact: "$staff.staffContact",
+          staffPhoto: "$staff.staffPhoto",
+
+          _id: 0,
+        },
+      },
+    ]);
+
+    res.json({ data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 /* -------------------- FEEDBACK -------------------- */
 const feedbackSchema = new mongoose.Schema(
   {
