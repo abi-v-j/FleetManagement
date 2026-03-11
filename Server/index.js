@@ -1576,6 +1576,82 @@ const feedbackSchema = new mongoose.Schema(
 );
 const Feedback = mongoose.model("Feedback", feedbackSchema);
 
+
+/* -------------------- FEEDBACK API -------------------- */
+
+// INSERT FEEDBACK
+app.post("/feedback", async (req, res) => {
+  try {
+    const feedbackContent = (req.body.feedbackContent || "").trim();
+    const userId = req.body.userId;
+
+    if (!feedbackContent) {
+      return res.status(400).json({ message: "feedbackContent required" });
+    }
+
+    if (!userId) {
+      return res.status(400).json({ message: "userId required" });
+    }
+
+    await Feedback.create({ feedbackContent, userId });
+
+    res.json({ message: "Feedback Added Successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET ALL FEEDBACKS
+app.get("/feedback", async (req, res) => {
+  try {
+    const data = await Feedback.aggregate([
+      {
+        $lookup: {
+          from: "users", // collection name of User model
+          localField: "userId",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$userDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      { $sort: { createdAt: -1 } },
+      {
+        $project: {
+          feedbackId: "$_id",
+          feedbackContent: 1,
+          userId: 1,
+          userName: "$userDetails.userName", // change if your field name is different
+          createdAt: 1,
+          _id: 0,
+        },
+      },
+    ]);
+
+    res.json({ data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE FEEDBACK
+app.delete("/feedback/:id", async (req, res) => {
+  try {
+    const deleted = await Feedback.findByIdAndDelete(req.params.id);
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Feedback not found" });
+    }
+
+    res.json({ message: "Feedback Deleted Successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 /* -------------------- COMPLAINT -------------------- */
 
 const complaintSchema = new mongoose.Schema(
@@ -1594,7 +1670,181 @@ const complaintSchema = new mongoose.Schema(
 const Complaint = mongoose.model("Complaint", complaintSchema);
 
 
+/* -------------------- COMPLAINT API -------------------- */
 
+// INSERT COMPLAINT
+app.post("/complaint", async (req, res) => {
+  try {
+    const complaintTitle = (req.body.complaintTitle || "").trim();
+    const complaintContent = (req.body.complaintContent || "").trim();
+    const userId = req.body.userId;
+
+    if (!complaintTitle) {
+      return res.status(400).json({ message: "complaintTitle required" });
+    }
+
+    if (!complaintContent) {
+      return res.status(400).json({ message: "complaintContent required" });
+    }
+
+    if (!userId) {
+      return res.status(400).json({ message: "userId required" });
+    }
+
+    await Complaint.create({
+      complaintTitle,
+      complaintContent,
+      userId,
+    });
+
+    res.json({ message: "Complaint Added Successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET ALL COMPLAINTS
+app.get("/complaint", async (req, res) => {
+  try {
+    const data = await Complaint.aggregate([
+      {
+        $lookup: {
+          from: "users", // change if your user collection name is different
+          localField: "userId",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$userDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      { $sort: { createdAt: -1 } },
+      {
+        $project: {
+          complaintId: "$_id",
+          complaintTitle: 1,
+          complaintContent: 1,
+          complaintDate: 1,
+          complaintReply: 1,
+          complaintStatus: 1,
+          userId: 1,
+          userName: "$userDetails.userName", // change field if needed
+          createdAt: 1,
+          _id: 0,
+        },
+      },
+    ]);
+
+    res.json({ data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE COMPLAINT
+app.delete("/complaint/:id", async (req, res) => {
+  try {
+    const deleted = await Complaint.findByIdAndDelete(req.params.id);
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Complaint not found" });
+    }
+
+    res.json({ message: "Complaint Deleted Successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* -------------------- ADMIN COMPLAINT API -------------------- */
+
+// GET ALL COMPLAINTS
+app.get("/admin/complaint", async (req, res) => {
+  try {
+    const data = await Complaint.aggregate([
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$userDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      { $sort: { createdAt: -1 } },
+      {
+        $project: {
+          complaintId: "$_id",
+          complaintTitle: 1,
+          complaintContent: 1,
+          complaintDate: 1,
+          complaintReply: 1,
+          complaintStatus: 1,
+          userId: 1,
+          userName: "$userDetails.userName", // change if needed
+          userEmail: "$userDetails.userEmail", // change if needed
+          createdAt: 1,
+          _id: 0,
+        },
+      },
+    ]);
+
+    res.json({ data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// REPLY / UPDATE COMPLAINT
+app.put("/admin/complaint/:id/reply", async (req, res) => {
+  try {
+    const complaintReply = (req.body.complaintReply || "").trim();
+
+    if (!complaintReply) {
+      return res.status(400).json({ message: "complaintReply required" });
+    }
+
+    const updated = await Complaint.findByIdAndUpdate(
+      req.params.id,
+      {
+        complaintReply,
+        complaintStatus: "Replied",
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Complaint not found" });
+    }
+
+    res.json({ message: "Reply Added Successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE COMPLAINT
+app.delete("/admin/complaint/:id", async (req, res) => {
+  try {
+    const deleted = await Complaint.findByIdAndDelete(req.params.id);
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Complaint not found" });
+    }
+
+    res.json({ message: "Complaint Deleted Successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 
 // -------------------- LOGIN (USER / ADMIN / STAFF / MANAGER) --------------------
